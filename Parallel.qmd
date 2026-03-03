@@ -185,3 +185,73 @@ stopCluster(c1)
 ```
 The coverage for both the serial and the parallel implementations are both values in the low 90s which is below the expected 95% but not by a significant amount 
 
+# Question 4
+
+```{r}
+set.seed(1234)
+
+#Crate a random vector of 5 values 3 times and in each loop find the maximum of that random vector 
+result = foreach(x = irnorm(5, count = 3), .combine = c) %do% {
+  max(x)
+}
+
+result
+```
+
+# Question 5
+
+## ParApply 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+size = 10000
+
+#Threads 
+cP = makeCluster(4)
+
+registerDoParallel(cP)
+
+set.seed(1234)
+
+v1 = rnorm(size,0,1)
+
+v2 = rnorm(size,0,1)
+
+v3 = rnorm(size,0,1)
+
+
+#Making a matrix of vectors 
+m1 = cbind(v1,v2,v3)
+
+#
+ParApplyTime = system.time({result = parApply(cP,m1,2,max)})
+
+
+stopCluster(cP)
+
+ParApplyTime
+```
+
+## Replicate 
+
+```{r}
+replicateTime = system.time({replicate(3,max(rnorm(size,0,1)))})
+replicateTime
+```
+
+## foreach 
+
+```{r}
+
+
+foreachTime = system.time({result = foreach(x = irnorm(size, count = 3), .combine = c) %do% {
+  max(x)
+} })
+
+foreachTime
+```
+
+There is no meaningful difference between the running times but the serial replicate is faster than both foreach and parApply
