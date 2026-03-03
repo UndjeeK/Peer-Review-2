@@ -6,6 +6,9 @@ editor: visual
 # Question 1
 
 ```{r}
+#| echo: true
+#| message: false
+#| warning: false
 
 #install.packages("doParallel")
 
@@ -23,6 +26,7 @@ c1 = makeCluster(4)
 #Assigning threads
 registerDoParallel(c1)
 
+cat("Serial time")
 #Serial
 system.time({
   result = foreach(i = 1:100, .combine = "rbind") %do% {
@@ -30,9 +34,9 @@ system.time({
     resultrow = c(mean(s), var(s))
   }
 })
-result
 
 #Parallel
+cat("Parallel time")
 system.time({
   result = foreach(i = 1:100, .combine = "rbind") %dopar% {
     s = rexp(100, 1)
@@ -42,5 +46,57 @@ system.time({
 
 
 tibbleResults = as.data.frame(result) |> rename(Mean = V1, Variance = V2)
-tibbleResults
+head(tibbleResults)
 ```
+
+
+# Question 2
+
+```{r}
+#| message: false
+#| warning: false
+library(MASS)
+gal <- galaxies
+
+B = 1000
+
+bs = matrix(0,ncol = length(gal),nrow = B)
+
+#Serial 
+system.time({
+  result = foreach(i = 1:B, .combine = "rbind") %do% {
+    s = sample(gal,82,T)
+    median(s)
+  }
+})
+
+
+#Creating threads 
+c1 = makeCluster(4)
+
+#Assigning threads
+registerDoParallel(c1)
+
+#Parallel but very slow
+system.time({
+  result = foreach(i = 1:B, .combine = "c") %dopar% {
+    s = sample(gal,82,T)
+    median(s)
+  }
+})
+
+#Dividing work into threads 
+work_size = 1000 #Amount of work given to each thread
+n_threads = B / work_size
+
+
+system.time({
+  result = foreach(i = 1:n_threads, .combine = "c",packages = "MASS") %dopar% {
+    replicate(work_size, median(sample(gal, 82, TRUE)))
+  }
+  })
+
+stopCluster(c1)
+```
+
+For small number of samples the serial solution is faster (values of B below 300) but soon after parallel solution begins to perform significantly better. For 1000 samples there is 3.875x speed up which is close to the theoretical maximum of 4 for 4 threads.
