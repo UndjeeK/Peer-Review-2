@@ -100,3 +100,86 @@ stopCluster(c1)
 ```
 
 For small number of samples the serial solution is faster (values of B below 300) but soon after parallel solution begins to perform significantly better. For 1000 samples there is 3.875x speed up which is close to the theoretical maximum of 4 for 4 threads.
+
+# Question 3
+
+```{r}
+
+#Number of times interval contains 1 
+count = 0
+
+#Number of times loop runs
+total = 100
+
+#Serial
+timeSerial = system.time({
+  for(i in 1:total) {
+        B = 1000
+        #Drawing sample from exponential distribution 
+        s = rexp(50,1)
+        
+        #Generate bootstrap sample 
+        bs = matrix(0,ncol = 50,nrow = B)
+        
+        for(i in 1:B) {
+          samp = sample(s,50,T)
+          
+          bs[i,] = samp
+        }
+        
+        bsMeans = apply(bs,1,mean)
+        
+        c1 = quantile(bsMeans,0.025,names = F)
+        
+        c2 = quantile(bsMeans, 0.975,names = F)
+        
+        
+        x = ifelse(c1 <= 1 & c2 >= 1,1,0)
+        
+        count = count + x
+}
+  
+})
+
+
+timeSerial
+
+coverage = (count/total)*100
+coverage
+
+#Parallel implementation
+
+#Creating threads 
+c1 = makeCluster(4)
+
+#Assigning threads
+registerDoParallel(c1)
+
+timeParallel= system.time({
+  
+
+    count2 = foreach(1:total,.combine =c) %dopar% {
+      
+       #Drawing sample from exponential distribution 
+       s = rexp(50,1)
+       
+       #Bootstrap 
+       bsMeans2 = replicate(1000,mean(sample(s,50,T)))
+       
+       #Computing quantiles 
+       c1 = quantile(bsMeans2,0.025,names = F)
+       c2 = quantile(bsMeans2, 0.975,names = F)
+       
+       #Assigning value to count 
+       ifelse(c1 <= 1 & c2 >= 1,1,0)
+    }
+    
+})
+
+timeParallel
+
+#Percentage
+sum(count2)
+
+stopCluster(c1)
+```
