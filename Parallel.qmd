@@ -183,3 +183,5 @@ sum(count2)
 
 stopCluster(c1)
 ```
+The coverage for both the serial and the parallel implementations are both values in the low 90s which is below the expected 95% but not by a significant amount 
+
