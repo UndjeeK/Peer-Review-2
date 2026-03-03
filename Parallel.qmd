@@ -1,0 +1,46 @@
+---
+title: "Parallel"
+format: pdf
+editor: visual
+---
+# Question 1
+
+```{r}
+
+#install.packages("doParallel")
+
+library(doParallel)
+
+library(kableExtra)
+
+library(tibble)
+
+library(dplyr)
+
+#Creating threads 
+c1 = makeCluster(4)
+
+#Assigning threads
+registerDoParallel(c1)
+
+#Serial
+system.time({
+  result = foreach(i = 1:100, .combine = "rbind") %do% {
+    s = rexp(100, 1)
+    resultrow = c(mean(s), var(s))
+  }
+})
+result
+
+#Parallel
+system.time({
+  result = foreach(i = 1:100, .combine = "rbind") %dopar% {
+    s = rexp(100, 1)
+    resultrow = c(mean(s), var(s))
+  }
+})
+
+
+tibbleResults = as.data.frame(result) |> rename(Mean = V1, Variance = V2)
+tibbleResults
+```
